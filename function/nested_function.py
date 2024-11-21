@@ -1,8 +1,15 @@
-def upper(n):
-    def inner(m):
-        return n ** m
-    return inner
+msg = 'I am global'
+
+def outer():
+    msg = 'I am outer'
+
+    def inner():
+        msg = 'I am inner'
+        print(msg)
+
+    inner()
+    print(msg)
 
 
-t = upper(3)
-print(t(4))
+outer()
+print(msg)
