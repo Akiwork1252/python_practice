@@ -19,6 +19,7 @@ def print_count3():
     print((f'func3: {call_count}'))
 
 
+
 print_count()
 print_count2()
 print_count()
