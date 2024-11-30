@@ -6,6 +6,7 @@ class PrimeNumbersIterator:
 
 
     def return_prime_num(self, num):
+        pass
 
 
     def __next__(self):
