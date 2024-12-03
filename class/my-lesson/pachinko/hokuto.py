@@ -1,6 +1,79 @@
-from store import Store
+import random
 
-class Hokuto(Store):
-    def hokuto(self):
-        print('CR北斗の拳で遊びます。')
-        Store.lend(self)
+# スペック:CR北斗の拳:
+# (通常時の大当り確率): 1/349, (初当たり出玉): +300(4/5) or +1500(1/5),
+# (確率変動突入率): 100%, (確率変動時の大当り確率): 当たり:1/40, 転落:1/150,
+# (確率変動時の出玉振り分け): +300(1/4) or +1500(3/4),
+
+# 抽選（通常時）
+def lottery(): # count:回転数
+    probability_of_winning = 349  # 大当り確率
+    n = random.randint(1, probability_of_winning)  # パチンコ台の乱数
+    user = random.randint(1, probability_of_winning)  # ユーザーの乱数
+    # ユーザー乱数＝パチンコ台乱数 >> 大当り
+    if user == n:
+        # ５分の１でビッグボーナス (+1500玉）
+        if user <= (probability_of_winning / 5):
+            big_bonus = 1500
+            print('*BIG BONUS(+1500)* >>> 確率変動突入')
+            return big_bonus
+        else:
+            bonus = 300
+            print('*BONUS* (+300) >>> 確率変動突入')
+            return bonus
+    else:
+        print('-', end='')
+        return None
+
+# 抽選（確率変動時） 大当り(1/40)転落(1/150)どちらか引くまで確率変動ループ
+def lottery_bonus():
+    winning = 40  # 大当り確率
+    losing = 150  # 転落確率
+    n_winning = random.randint(1, winning)  # パチンコ台の大当り乱数
+    n_losing = random.randint(1, losing)  # パチンコ台の転落乱数
+    user = random.randint(1, winning)  # ユーザーの乱数
+    # ユーザー乱数＝パチンコ台当たり乱数 >> 大当り
+    if user == n_winning:
+        # ４分の３でビッグボーナス
+        if user >= (winning / 4):
+            big_bonus = 1500
+            print('*BIG BONUS* (+1500) >>> 確率変動継続')
+            return big_bonus
+        else:
+            bonus = 300
+            print('*BONUS* (+300) >>> 確率変動継続')
+            return bonus
+    # ユーザー乱数＝パチンコ台転落乱数 >> 通常に転落
+    elif user == n_losing:
+        print(f'ハズレを引きました。確率変動を終了します。')
+        end = 'end'
+        return end
+    else:
+        print('-', end='')
+        return None
+
+
+
+
+
+
+
+
+if __name__ == '__main__':
+    ball = 1000
+    count = 0
+    while ball > 0:
+        ball -= 1
+        jackpot = lottery()
+        if jackpot is None:
+            count += 1
+            continue
+        else:
+            while True:
+                jackpot_b = lottery_bonus()
+                if jackpot_b == None:
+                    continue
+                else:
+                    print('＃'*5, '結果表示', '＃'*5)
+                    print(f'総獲得出玉：{jackpot_b}pt')
+                    break
