@@ -1,15 +1,13 @@
 from store import Store
-from hokuto import Hokuto
-from eva import eva
-from madomagi import madomagi
+from store import Pachinko
 
 
 class Main:
-    # 機種の関数ディクショナリー
+    # 各機種の関数ディクショナリー
     func_dict = {
-        'H': Hokuto.hokuto,
-        'E': eva,
-        'M': madomagi,
+        'H': Pachinko.hokuto,
+        'E': Pachinko.eva,
+        'M': Pachinko.madomagi,
     }
 
     @staticmethod
@@ -18,7 +16,7 @@ class Main:
         name = input('名前: ')
         age = int(input('年齢： '))
         money = int(input('所持金: '))
-
+        # char:インスタンス作成
         char = Store(name, age, money)
         print('-'*20)
         print('アカウントを作成しました。')
@@ -37,6 +35,6 @@ class Main:
             print('またのご来店をお待ちしております。')
         else:
             choice = char.display()
-            Main.func_dict[choice](char.money)
+            Main.func_dict[choice](char)
 
 Main.main()
