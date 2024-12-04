@@ -15,11 +15,11 @@ def lottery(): # count:回転数
         # ５分の１でビッグボーナス (+1500玉）
         if user <= (probability_of_winning / 5):
             big_bonus = 1500
-            print('*BIG BONUS(+1500)* >>> 確率変動突入')
+            print('***BIG BONUS(+1500玉)ゲット*** <おめでとうございます>')
             return big_bonus
         else:
             bonus = 300
-            print('*BONUS* (+300) >>> 確率変動突入')
+            print('***BONUS(+300玉)ゲット*** <おめでとうございます>')
             return bonus
     else:
         print('-', end='')
@@ -37,11 +37,11 @@ def lottery_bonus():
         # ４分の３でビッグボーナス
         if user >= (winning / 4):
             big_bonus = 1500
-            print('*BIG BONUS* (+1500) >>> 確率変動継続')
+            print('*BIG BONUS(+1500玉)* を引きました。 >>> 確率変動継続', end=' ')
             return big_bonus
         else:
             bonus = 300
-            print('*BONUS* (+300) >>> 確率変動継続')
+            print('*BONUS(+300玉)* を引きました。>>> 確率変動継続', end=' ')
             return bonus
     # ユーザー乱数＝パチンコ台転落乱数 >> 通常に転落
     elif user == n_losing:
@@ -51,29 +51,3 @@ def lottery_bonus():
     else:
         print('-', end='')
         return None
-
-
-
-
-
-
-
-
-if __name__ == '__main__':
-    ball = 1000
-    count = 0
-    while ball > 0:
-        ball -= 1
-        jackpot = lottery()
-        if jackpot is None:
-            count += 1
-            continue
-        else:
-            while True:
-                jackpot_b = lottery_bonus()
-                if jackpot_b == None:
-                    continue
-                else:
-                    print('＃'*5, '結果表示', '＃'*5)
-                    print(f'総獲得出玉：{jackpot_b}pt')
-                    break

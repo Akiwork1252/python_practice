@@ -9,13 +9,17 @@ class Main:
         'E': Pachinko.eva,
         'M': Pachinko.madomagi,
     }
-
+    play_dict = {}
+    user_info_list = []
     @staticmethod
     def account_create():
-        print('アカウントを作成してください')
+        print('名前と年齢を入力してください。')
         name = input('名前: ')
         age = int(input('年齢： '))
         money = int(input('所持金: '))
+        Main.user_info_list.append(age)
+        Main.user_info_list.append(money)
+        Main.play_dict[name] = Main.user_info_list
         # char:インスタンス作成
         char = Store(name, age, money)
         print('-'*20)
@@ -35,6 +39,10 @@ class Main:
             print('またのご来店をお待ちしております。')
         else:
             choice = char.display()
-            Main.func_dict[choice](char)
+            if choice is None:
+                print('またのご来店をお待ちしております。')
+            else:
+                Main.func_dict[choice](char)
 
 Main.main()
+# Main.account_create()
