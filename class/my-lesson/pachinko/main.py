@@ -13,7 +13,7 @@ class Main:
     user_info_list = []
     @staticmethod
     def account_create():
-        print('名前と年齢を入力してください。')
+        print('名前,年齢,所持金を入力してください。')
         name = input('名前: ')
         age = int(input('年齢： '))
         money = int(input('所持金: '))
@@ -38,11 +38,15 @@ class Main:
         if judge is None:
             print('またのご来店をお待ちしております。')
         else:
-            choice = char.display()
-            if choice is None:
-                print('またのご来店をお待ちしております。')
-            else:
-                Main.func_dict[choice](char)
+            while True:
+                choice = char.display()
+                if choice is None:
+                    print('またのご来店をお待ちしております。')
+                    break
+                else:
+                    ex = Main.func_dict[choice](char)
+                    if ex == 'y':
+                        break
 
 Main.main()
 # Main.account_create()
