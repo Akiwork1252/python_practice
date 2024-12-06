@@ -29,13 +29,14 @@ def lottery():
 def lottery_bonus():
     winning = 40  # 大当り確率
     losing = 150  # 転落確率
-    n_winning = random.randint(1, winning)  # パチンコ台の大当り乱数
-    n_losing = random.randint(1, losing)  # パチンコ台の転落乱数
-    user = random.randint(1, winning)  # ユーザーの乱数
+    machine_winning = random.randint(1, winning)  # パチンコ台の当たり乱数
+    user_winning = random.randint(1, winning)  # ユーザーの当たり乱数
+    machine_losing = random.randint(1, losing)  # パチンコ台の転落乱数
+    user_losing = random.randint(1, losing)  # ユーザーの転落乱数
     # ユーザー乱数＝パチンコ台当たり乱数 >> 大当り
-    if user == n_winning:
+    if user_winning == machine_winning:
         # 75%がビッグボーナス
-        if user <= (winning * 0.75):
+        if user_winning <= (winning * 0.75):
             big_bonus = 1500
             input('*BIG BONUS(+1500玉)* を引きました。>>> 確率変動継続! Enterキーを押してください。')
             return big_bonus
@@ -44,10 +45,9 @@ def lottery_bonus():
             input('*BONUS(+300玉)* を引きました。>>> 確率変動継続! Enterキーを押してください。')
             return bonus
     # ユーザー乱数＝パチンコ台転落乱数 >> 通常に転落
-    elif user == n_losing:
-        print(f'ハズレを引きました。確率変動を終了します。')
-        end = 'end'
-        return end
+    elif user_losing == machine_losing:
+        print(f'転落を引きました。確率変動を終了します。')
+        return 'end'
     else:
         print('-', end='')
         return None

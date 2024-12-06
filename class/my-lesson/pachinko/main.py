@@ -11,6 +11,7 @@ class Main:
     }
     play_dict = {}
     user_info_list = []
+
     @staticmethod
     def account_create():
         print('名前,年齢,所持金を入力してください。')
@@ -45,8 +46,9 @@ class Main:
                     break
                 else:
                     ex = Main.func_dict[choice](char)
-                    if ex == 'y':
+                    if ex == '*':
                         break
+
 
 Main.main()
 # Main.account_create()
