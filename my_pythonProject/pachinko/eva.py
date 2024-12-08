@@ -6,7 +6,7 @@ import random
 # (確率変動時の出玉振り分け): ALL+1500,
 
 # 抽選（通常時）
-def lottery():
+def e_lottery():
     probability_of_winning = 319  # 大当り確率
     n = random.randint(1, probability_of_winning)  # パチンコ台の乱数
     user = random.randint(1, probability_of_winning)  # ユーザーの乱数
@@ -32,7 +32,7 @@ def lottery():
         return None
 
 # 抽選（チャンスタイム）
-def lottery_chance():
+def e_lottery_chance():
     probability_of_winning = 170
     n = random.randint(1, probability_of_winning)  # パチンコ台の乱数
     user = random.randint(1, probability_of_winning)  # ユーザーの乱数
@@ -46,7 +46,7 @@ def lottery_chance():
         return None
 
 # 抽選（確率変動時） 大当り(1/90)
-def lottery_bonus():
+def e_lottery_bonus():
     winning = 90  # 大当り確率
     n_winning = random.randint(1, winning)  # パチンコ台の大当り乱数
     user = random.randint(1, winning)  # ユーザーの乱数

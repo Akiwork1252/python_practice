@@ -6,7 +6,7 @@ import random
 # (確率変動時の出玉振り分け): +300(25%) or +1500(75%),
 
 # 抽選（通常時）
-def lottery():
+def h_lottery():
     probability_of_winning = 349  # 大当り確率
     n = random.randint(1, probability_of_winning)  # パチンコ台の乱数
     user = random.randint(1, probability_of_winning)  # ユーザーの乱数
@@ -26,7 +26,7 @@ def lottery():
         return None
 
 # 抽選（確率変動時） 大当り(1/40)転落(1/150)どちらか引くまで確率変動ループ
-def lottery_bonus():
+def h_lottery_bonus():
     winning = 40  # 大当り確率
     losing = 150  # 転落確率
     machine_winning = random.randint(1, winning)  # パチンコ台の当たり乱数

@@ -1,5 +1,7 @@
 import random
-from hokuto import lottery, lottery_bonus
+from hokuto import h_lottery, h_lottery_bonus
+from eva import e_lottery, e_lottery_chance, e_lottery_bonus
+
 
 # ===============================================================
 # パチンコ店のクラス　
@@ -252,7 +254,7 @@ class Pachinko(Store):
                             print(f'{re}玉を払い出します。　＜持ち玉:{before}玉 >>> {Pachinko.bonus_balls}玉＞')
                     elif replay_choice == 'n':
                         print('遊技を終了します。')
-                        income = Store.cashing(self)  # cashing_out() >>> 戻り値:income(=ball*4)
+                        income = Store.cashing(self)  # 戻り値:income(=ball*4)
                         Store.revenue(self, income)
                         print('お疲れ様でした。Enterキーを押すとメニュー画面に戻ります。。')
                         Pachinko.replay = 0  # 再プレイを０に戻す。
@@ -261,11 +263,10 @@ class Pachinko(Store):
                     enter = input('Enterキーを押すと玉が発射されます。')
                     if type(enter) is str:
                         break
-                # user_action = input('Enterキーを押すと玉が発射されます。')
                 # 遊技
                 while (self.ball > 0) or (Pachinko.replay_balls > 0):
                     if (Pachinko.replay == 0) or (Pachinko.replay_balls > 0):
-                        navel = Store.ball_goes_in()  # ball_goes_in() >>> 戻り値{None:消化、n:ヘソ入賞}
+                        navel = Store.ball_goes_in()  # 戻り値{None:消化、n:ヘソ入賞}
                         # 玉の入賞判定 (通常時7%で入賞) None:ヘソ入賞なし、int型:ヘソ入賞 -> 抽選
                         if navel is None:
                             if Pachinko.replay == 0:
@@ -277,7 +278,7 @@ class Pachinko(Store):
                                 continue
                         else:
                             Pachinko.count += 1 # 回転数
-                            jackpot = lottery()  # lottery() >>> 戻り値{None:ハズレ、int型:当たり}
+                            jackpot = h_lottery()  # 戻り値{None:ハズレ、int型:当たり}
                             # 大当りの抽選判定
                             if jackpot is None:
                                 continue
@@ -300,17 +301,17 @@ class Pachinko(Store):
                                 Pachinko.count = 0 # 大当りを引いたら通常時の回転数を初期化
                                 # 大当り(1/40)転落(1/150)どちらか引くまで確率変動ループ
                                 while True:
-                                    n = Store.ball_goes_in_bonus()  # ball_goes_in_bonus() >>> 戻り値{n:ヘソ入賞、None:消化}
+                                    n = Store.ball_goes_in_bonus()  # 戻り値{n:ヘソ入賞、None:消化}
                                     # 玉の入賞判定　(確率変動時90%でヘソ入賞) None:ヘソ入賞なし、int型:ヘソ入賞->抽選
                                     if n is None:
                                         Pachinko.bonus_balls -= 1  # 持ち玉が減る
                                         continue
                                     else:
                                         Pachinko.count_b += 1  # 回転数
-                                        jackpot_b = lottery_bonus()  # lottery_bonus() 抽選
+                                        Pachinko.count_b += 1  # ボーナス時の回転数をカウント
+                                        jackpot_b = h_lottery_bonus()  # lottery_bonus() 抽選
                                         # 大当りor転落の抽選判定  None:ハズレ、int型:大当り、str型:転落
                                         if jackpot_b is None:
-                                            Pachinko.count_b += 1  # ボーナス時の回転数をカウント
                                             continue
                                         elif type(jackpot_b) is int:
                                             Pachinko.bonus_balls += jackpot_b  # 大当り総獲得出玉
@@ -337,7 +338,6 @@ class Pachinko(Store):
                                                 Pachinko.bonus_balls += Pachinko.replay_balls  # 大当り前の持ち玉を獲得出玉に合算
                                                 Pachinko.replay_balls = 0  # 持ち玉を初期化
                                             Pachinko.before_bonus_balls = Pachinko.bonus_balls  # 再プレイで使用した玉数を計算する時に使用
-                                            self.ball = 0  #
                                             Store.result(self)
                                             Pachinko.count_b = 0  # 回転数を初期化
                                             Pachinko.bonus_pt = 0  # ボーナス獲得出玉を初期化
@@ -378,7 +378,7 @@ class Pachinko(Store):
                         return Pachinko.hokuto(self)  # 再プレイなら自身の関数を呼ぶ
                     else:
                         print('遊技を終了します。')
-                        income = Store.cashing(self)  # cashing_out() >>> 戻り値:income(=ball*4)
+                        income = Store.cashing(self)  # 戻り値:income(=ball*4)
                         Store.revenue(self, income)
                         Pachinko.replay = 0  # 再プレイを０に戻す。
                         while True:  # ユーザーの応答を待つ
@@ -406,7 +406,174 @@ class Pachinko(Store):
 # (確率変動時の出玉振り分け): ALL+1500,
 
     def eva(self, ball=0):
+        print('-'*20)
         print('CRエヴァンゲリオンで遊びます。')
+        # 遊技準備
+        while (self.money >= 500) or (Pachinko.bonus_balls > 0):
+            # 再プレイではない場合(持ち玉遊技ではない場合)
+            if Pachinko.bonus_balls == 0:
+                ball = Store.lend(self)  # lend() >>> self.ball += 125
+            # lend()で玉への変換を拒否した場合
+            if ball is None:
+                input('遊技を終了します。Enterキーを押すとメニュー画面に戻ります。')
+                break
+            else:
+                if Pachinko.bonus_balls == 0:
+                    print('交換完了：[現金:500円 ＞＞＞ 持ち玉:125玉]')
+                # 再プレイ（持ち玉遊技）
+                else:
+                    re = 125  # 持ち玉遊技(=125玉)
+                    while True:  # ユーザーの応答を待つ
+                        replay_choice = input('\n持ち玉を使用して遊技を行いますか？(y/n): ')
+                        if type(replay_choice) is str:
+                            break
+                    if replay_choice == 'y':
+                        before = Pachinko.bonus_balls
+                        if Pachinko.bonus_balls < re:
+                            Pachinko.replay_balls = Pachinko.bonus_balls  #
+                            print(f'{Pachinko.replay_balls}玉を払い出します。　[持ち玉:{Pachinko.bonus_balls}玉 >>> 0玉]')
+                            Pachinko.bonus_balls = 0
+                        else:
+                            Pachinko.bonus_balls -= re  # 持ち玉から125玉引く
+                            Pachinko.replay_balls += re  # 遊技玉に125玉追加する
+                            print(f'{re}玉を払い出します。　＜持ち玉:{before}玉 >>> {Pachinko.bonus_balls}玉＞')
+                    elif replay_choice == 'n':
+                        print('遊技を終了します。')
+                        income = Store.cashing(self)  # cashing_out() >>> 戻り値:income(=ball*4)
+                        Store.revenue(self, income)
+                        print('お疲れ様でした。Enterキーを押すとメニュー画面に戻ります。。')
+                        Pachinko.replay = 0  # 再プレイを０に戻す。
+                        break
+                while True:  # ユーザーの応答を待つ
+                    enter = input('Enterキーを押すと玉が発射されます。')
+                    if type(enter) is str:
+                        break
+                # 遊技
+                while (self.ball > 0) or (Pachinko.replay_balls > 0):
+                    if (Pachinko.replay == 0) or (Pachinko.replay_balls > 0):
+                        navel = Store.ball_goes_in()  # 戻り値{None:消化、n:ヘソ入賞}
+                        # 玉の入賞判定 (通常時7%で入賞) None:ヘソ入賞なし、int型:ヘソ入賞 -> 抽選
+                        if navel is None:
+                            if Pachinko.replay == 0:
+                                self.ball -= 1  # 持ち玉が減る
+                                continue
+                            # 持ち玉遊技の場合
+                            else:
+                                Pachinko.replay_balls -= 1  # 持ち玉が減る
+                                continue
+                        else:
+                            Pachinko.count += 1 # 回転数
+                            jackpot = e_lottery()  # 戻り値{None:ハズレ、int型:当たり}
+                            # 大当りの抽選判定
+                            if jackpot is None:
+                                continue
+                            # チャンスタイム(100回転)
+                            elif type(jackpot) is float:
+                                Pachinko.count = 0  # 通常時の回転数を初期化
+                                chance_time = 100
+                                Pachinko.bonus_balls += int(jackpot)  # 大当り純増出玉(確変突入時の遊技で使用＝減少していく）
+                                Pachinko.bonus_pt += jackpot  # 大当りでの獲得出玉
+                                Pachinko.total_bonus_count += 1  # 大当り回数をカウント
+                                Pachinko.small_bonus_count += 1  # ボーナス内訳をカウント
+                                print(f'{Pachinko.count}回転目で小当りを引きました。{chance_time}回転のチャンスタイムに突入します。')
+                                print('チャンスタイム中に大当りを引くと確率変動に突入します。')
+                                while True:  # ユーザーの応答を待つ
+                                    enter = input(f'\nEnterを押すと玉が発射されます。')
+                                    if type(enter) is str:
+                                        break
+                                # チャンスタイム（入賞90%、抽選1/170)
+                                while Pachinko.count_b <= 100:
+                                    navel = Store.ball_goes_in_bonus()  # 戻り値{None:消化、n:ヘソ入賞}
+                                    # 玉の入賞判定 (通常時7%で入賞) None:ヘソ入賞なし、int型:ヘソ入賞 -> 抽選
+                                    if navel is None:
+                                        self.bonus_balls -= 1  # 持ち玉が減る
+                                        continue
+                                    else:
+                                        Pachinko.count_b += 1  # ボーナス時の回転数をカウント
+                                        jackpot_c = e_lottery_chance()
+                                        if jackpot_c is None:
+                                            continue
+                                        else:
+                                            input(f'チャンスタイム{Pachinko.count_b}回転目で大当りを引きました。'
+                                                  'おめでとうございます。Enterキーを押してください。')
+                                            pass # 確変に入る
+
+                                # チャンスタイム終了
+                                input(f'チャンスタイム{chance_time}回に大当りを引けませんでした。通常に戻ります。Enterを押してください。')
+                                Pachinko.bonus_balls += self.ball  # 獲得出玉に小当たり前の持ち玉を足す
+                                self.ball = 0
+                                Pachinko.total_bonus_count += 1  # 大当り回数を初期化
+                                Pachinko.small_bonus_count =0  # ボーナス内訳を初期化
+                                Pachinko.count_b = 0  # 大当り時の回転数を初期化
+                                Pachinko.result(self)  # 結果表示
+                                break
+                            # 確率変動
+                            else:
+                                bonus_time = 170
+                                Pachinko.count = 0  # 通常時の回転数を初期化
+                                Pachinko.bonus_balls += int(jackpot)  # 大当り純増出玉(確変突入時の遊技で使用＝減少していく）
+                                Pachinko.bonus_pt += jackpot  # 大当りでの獲得出玉
+                                Pachinko.total_bonus_count += 1  # 大当り回数をカウント
+                                Pachinko.small_bonus_count += 1  # ボーナス内訳をカウント
+                                Pachinko.count = 0  # 通常時の回転数を初期化
+                                while Pachinko.count_b <= 170:
+                                    print(f'\n*確率変動*: {Pachinko.total_bonus_count}回目')
+                                    while True:  # ユーザーの応答を待つ
+                                        enter = input('Enterキーを押すと玉が発射されます。')
+                                        if type(enter) is str:
+                                            break
+                                    n = Store.ball_goes_in_bonus()  # 戻り値{n:ヘソ入賞、None:消化}
+                                    # ヘソ入賞判定
+                                    if n is None:
+                                        Pachinko.bonus_balls -= 1  # 持ち玉が減る
+                                        continue
+                                    else:
+                                        Pachinko.count_b += 1  # 回転数
+                                        jackpot_b = e_lottery_bonus()  # lottery_bonus() 抽選
+                                        # 大当りor転落の抽選判定  None:ハズレ、int型:大当り
+                                        if jackpot_b is None:
+                                            Pachinko.count_b += 1  # ボーナス時の回転数をカウント
+                                            continue
+                                        else:
+                                            Pachinko.bonus_balls += jackpot_b  # 大当り純増出玉
+                                            Pachinko.bonus_pt += jackpot_b  # 大当り獲得出玉
+                                            Pachinko.total_bonus_count += 1
+                                            Pachinko.big_bonus_count += 1
+                                            Store.bonus_info(self, jackpot_b)  # 情報表示
+                                            print()
+                                            print(f'*確率変動*: {Pachinko.total_bonus_count}回目')
+                                            Pachinko.bonus_list.append(jackpot_b)
+                                            Pachinko.count_b = 0  # 大当り時の回転数を初期化
+                                            input('キーを押すと玉が発射されます。')
+                                            continue
+                                # 確率変動終了
+                                print(f'\n確率変動{bonus_time}回転で大当りを引けませんでした。')
+                                input('確率変動を終了します。 Enterを押してください。')
+                                if Pachinko.replay == 0:
+                                    Pachinko.bonus_balls += self.ball  # 大当り前の持ち玉を獲得出玉に合算
+                                    self.ball = 0  # 持ち玉を初期化
+                                else:
+                                    Pachinko.bonus_balls += Pachinko.replay_balls  # 大当り前の持ち玉を獲得出玉に合算
+                                    Pachinko.replay_balls = 0  # 持ち玉を初期化
+                                Pachinko.before_bonus_balls = Pachinko.bonus_balls  # 再プレイで使用した玉数を計算する時に使用
+                                Store.result(self)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # =================================================
 # CR魔法少女まどかマギカ:
