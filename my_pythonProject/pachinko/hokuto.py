@@ -2,8 +2,8 @@ import random
 
 # CR北斗の拳:
 # (通常時の大当り確率): 1/349, (初当たり出玉): +300(80%) or +1500(20%),
-# (確率変動突入率): 100%, (確率変動時の大当り確率): 当たり:1/40, 転落:1/150,
-# (確率変動時の出玉振り分け): +300(25%) or +1500(75%),
+# (確率変動突入率): 100%, (確率変動時の大当り確率): 当たり:1/25, 転落:1/180,
+# (確率変動時の出玉振り分け): +300(25%) or +1500(75%), (継続率): 88%
 
 # 抽選（通常時）
 def h_lottery():
@@ -27,8 +27,8 @@ def h_lottery():
 
 # 抽選（確率変動時） 大当り(1/40)転落(1/150)どちらか引くまで確率変動ループ
 def h_lottery_bonus():
-    winning = 40  # 大当り確率
-    losing = 150  # 転落確率
+    winning = 25  # 大当り確率
+    losing = 180  # 転落確率
     machine_winning = random.randint(1, winning)  # パチンコ台の当たり乱数
     user_winning = random.randint(1, winning)  # ユーザーの当たり乱数
     machine_losing = random.randint(1, losing)  # パチンコ台の転落乱数
