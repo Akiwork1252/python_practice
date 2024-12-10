@@ -13,7 +13,7 @@ def m_lottery():
     if user == n:
         # 50%で確率変動突入
         if user <= (probability_of_winning * 0.5):
-            # 大当りのうちの10%がビッグボーナス (+1500玉)
+            # 初回大当りのうちの10%がビッグボーナス (+1500玉)
             if user <= ((probability_of_winning * 0.5) * 0.1):
                 big_bonus = 1500
                 print('***BIG BONUS(+1500玉)ゲット*** >>> 確率変動突入!(80回転)')
@@ -30,26 +30,27 @@ def m_lottery():
         print('-', end='')
         return None
 
-# 抽選（確率変動） 大当り(1/70: 80回)、1/3で上位突入
+# 抽選（確率変動） 大当り(1/70: 80回)、当たりの内1/3で上位突入
 def m_lottery_bonus():
     winning = 70
     n_winning = random.randint(1, winning)
     user = random.randint(1, winning)
     if user == n_winning:
         big_bonus = 1500
-        lt = random.randint(0, 2)
-        if lt == 0:
-            print('!!! <Lucky> !!!')
+        lucky = random.randint(0, 2)
+        if lucky == 0:
+            print('!!!<Lucky>!!!', end='')
             input('*BIG BONUS(+1500玉)* を引きました。>>> 確率変動<上位>突入!(120回転) Enterキーを押してください。')
+            return float(big_bonus)
         else:
             input('*BIG BONUS(+1500玉)* を引きました。>>> 確率変動継続!(80回転) Enterキーを押してください。')
-        return big_bonus
+            return big_bonus
     else:
         print('-', end='')
         return None
 
 # 抽選（確率変動<上位>） 大当り(1/60: 120回)
-def m_lottery_bonus():
+def m_lottery_bonus_plus():
     winning = 60
     n_winning = random.randint(1, winning)
     user = random.randint(1, winning)
