@@ -1,4 +1,6 @@
+import datetime
 import random
+from operate_db import DB
 from hokuto import h_lottery, h_lottery_bonus
 from eva import e_lottery, e_lottery_chance, e_lottery_bonus
 from madomagi import m_lottery, m_lottery_bonus, m_lottery_bonus_plus
@@ -9,13 +11,17 @@ from madomagi import m_lottery, m_lottery_bonus, m_lottery_bonus_plus
 #  インスタンス作成、入場制限、機種の表示、機種スペックの表示
 #  パチンコの共通機能(玉変換、ヘソ入賞判定(通常・確変)、当たり抽選(通常・確変)、回転数表示(通常・確変)、Bonus結果、換金)
 class Store:
+    history_dict = {}  # データベース保存用
+
     # コンストラクタ
     def __init__(self, name, age, money=0):
         self.name = name
-        self.age = age  # 入店時のみ使用
-        self.money = money
-        self.ball = 0
+        self.age = age  # 入店時とデータベースの操作に使用
+        self.money = money  # 所持金
+        self.ball = 0  # 入店後の初遊技で所持金からパチンコ玉に変換する。退店時は現金に戻す
         self.investment_amount = 0  # 総投資額を計算する
+        self.play = 0  # 遊技確認で使用。１回でも玉を発射すると＋１して、データベースに遊技履歴を残す。
+        self.gaming_machine = ''  # 遊技機種を保存
 
     # エントランス(20歳未満/所持金500円未満お断り）
     def entrance(self):
@@ -26,7 +32,7 @@ class Store:
         elif self.money < min_money:
             print(f'パチンコで遊ぶには{min_money}円以上必要です。')
         else:
-            print('いらっしゃいませ')
+            print('いらっしゃいませ!!')
             return self.age
 
     # 選択機種の表示  (戻り値：choice)
@@ -37,11 +43,14 @@ class Store:
             'E': '・CRエヴァンゲリオン (1/319)',
             'M': '・CR魔法少女まどかマギカ (1/199)',
             '#': '・各機種のスペックを一覧表示する。',
+            '=': '・過去の遊技履歴を表示する。',
             '$': '・お金を追加する。',
             '*': '・店を出る。',
         }
         while True:
-            print('下記メニューから遊技台の選択、もしくはその他アクションを選択して、対応キーを入力してください。')
+            input('Enterキーを押すとメニュー画面が表示されます。'
+                  'メニューから遊技台の選択、もしくはその他アクションを選択して、対応キーを入力してください。')
+
             print('-'*10, 'メニュー', '-'*10)
             for k, v in game.items():
                 if k == 'H':
@@ -50,15 +59,15 @@ class Store:
                     print('＜その他メニュー＞')
                 print(f'{v} >>> キー：{k}')
             print('-'*20)
-            # ユーザーがキーを入力するまで待機
-            choice = Pachinko.user_action('user_choice')
+
+            choice = Pachinko.user_action('user_choice')  # ユーザーがEnterキーを入力するまで待機
             # 機種スペックを表示
             if choice == '#':
                 Store.display_spec()
-            # 退店
-            elif choice == '*':
-                self.investment_amount = 0  # 退店時に投資額を初期化
-                return None
+
+            # 遊技履歴を表示
+            elif choice == '=':
+                DB.check_history(self.name, self.age)
 
             # 所持金を追加
             elif choice == '$':
@@ -67,13 +76,19 @@ class Store:
                 money = int(input('(例:5000): '))
                 self.money += money  # 所持金を増やす
                 input(f'あなたの所持金は{self.money}円になりました。Enterキーを押してください。')
+            # 退店
+            elif choice == '*':
+                self.investment_amount = 0  # 退店時に投資額を初期化
+                return None
+
             # ユーザーが機種を選択した場合
-            elif (choice in game) and (choice != '#') and (choice != '*') and (choice != '$'):
+            elif (choice in game) and (choice != '#') and (choice != '*') and (choice != '$') and (choice != '-'):
                 if self.money < 500:
                     input('お金がないので遊べません。Enterキーを押してください。')
                 else:
                     print(f'あなたは{game[choice]}を選びました。')
                     break
+
             else:
                 print('入力されたキーが正しくありません。')
         return choice
@@ -107,6 +122,9 @@ class Store:
             enter = input('Enterキーを押すとメニュー画面に戻ります。')
             if type(enter) is str:
                 break
+
+    def check_the_game(self):
+        self.play += 1
 
     # パチンコ玉に変換する
     def lend(self):
@@ -150,7 +168,8 @@ class Store:
         print()
 
     # 確変時の情報表示
-    def bonus_info(self, jackpot_b):
+    @staticmethod
+    def bonus_info(jackpot_b):
         if type(jackpot_b) is str:
             print(f' info:(転落当たり：{Pachinko.count_b+1}回転目)')
         else:
@@ -158,7 +177,8 @@ class Store:
             print(f'     :(大当り{Pachinko.total_bonus_count}回目獲得! 総出玉:{Pachinko.bonus_pt-jackpot_b}玉 ＋ {jackpot_b}玉)')
 
     # 大当り終了時の結果を表示
-    def result(self):
+    @staticmethod
+    def result():
         print('\n', '='*8, '大当り結果', '='*8)
         print(f'総ボーナス数：{Pachinko.total_bonus_count}回'
               f'(BigBonus:{Pachinko.big_bonus_count}回、Bonus:{Pachinko.small_bonus_count}回)')
@@ -171,7 +191,8 @@ class Store:
                 break
 
     # 獲得した出玉をお金に変換して結果を表示する。
-    def cashing(self):
+    @staticmethod
+    def cashing():
         income = Pachinko.bonus_balls * 4
         input(f'持ち玉<{Pachinko.bonus_balls}玉>を1玉4円で換金します。Enterキーを押してください。')
         print('\n', '='*8, '換金', '='*8)
@@ -179,6 +200,13 @@ class Store:
         print('='*23)
         Pachinko.bonus_balls = 0  # ボーナス出玉を０にする。
         return income
+
+    # 遊技した日付を取得（データベース保存用）
+    @staticmethod
+    def get_date():
+        dt = datetime.datetime.now()
+        today = f'{dt.year}/{dt.month}/{dt.day}'
+        return today
 
     # 収益の計算と表示
     def revenue(self, income):
@@ -189,6 +217,9 @@ class Store:
         print('\n', '='*8, '収支', '='*8)
         print(f'所持金：{before}円　>>> {self.money}円')
         print(f'総投資額:{self.investment_amount}円')
+        date = Store.get_date()  # 日付を取得
+        # history(date CHAR(20), name CHAR(20), age INT, machine CHAR(20), income INT)
+        Store.history_dict.update(date=date, name=self.name, age=self.age, )
         if revenue > 0:
             print(f'プラス{revenue}円でした。')
             print('='*23)
@@ -200,54 +231,57 @@ class Store:
 
     # ユーザーの入力
     @staticmethod
-    def user_action(n):
+    def user_action(user):
         # ユーザー入力判定
-        def input_judge(user):
-            if (user != 'y') and (user != 'n'):
+        def input_judge(txt):
+            if (txt != 'y') and (txt != 'n'):
                 print('入力が正しくありません')
+                return None
             else:
-                return user
-
+                return txt
         while True:
-            if n == 'firing':
-                user = input('Enterキーを押すと玉が発射されます。')
-            elif n == 'menu':
-                user = input('Enterキーを入力すると次の画面に進みます。')
-            elif n == 'bonus_start':
-                user = input('<確率変動>に突入します。Enterキーを押してください。')
-            elif n == 'bonus_end':
-                user = input('<確率変動>を終了します。Enterを押すと結果画面が表示されます。\n')
-            elif n == 'replay_choice':
+            if user == 'firing':
+                action = input('Enterキーを押すと玉が発射されます。')
+            elif user == 'menu':
+                action = input('Enterキーを入力すると次の画面に進みます。')
+            elif user == 'bonus_start':
+                action = input('<確率変動>に突入します。Enterキーを押してください。')
+            elif user == 'bonus_end':
+                action = input('<確率変動>を終了します。Enterを押すと結果画面が表示されます。\n')
+            elif user == 'replay_choice':
                 while True:
-                    user = input('\n獲得出玉で遊技を続けますか？ (y/n): ')
-                    user = input_judge(user)
-                    if user is not None:
+                    action = input('\n獲得出玉で遊技を続けますか？ (y/n): ')
+                    n = input_judge(action)
+                    if n is not None:
                         break
-            elif n == 'replay':
+            elif user == 'replay':
                 while True:
-                    user = input('\n持ち玉を使用して遊技を行いますか？(y/n): ')
-                    user = input_judge(user)
-                    if user is not None:
+                    action = input('\n持ち玉を使用して遊技を行いますか？(y/n): ')
+                    n = input_judge(action)
+                    if n is not None:
                         break
-            elif n == 'replay_again':
+            elif user == 'replay_again':
                 while True:
-                    user = input('持ち玉を使い切りました。現金を使って遊技を継続しますか。(y/n)')
-                    user = input_judge(user)
-                    if user is not None:
+                    action = input('持ち玉を使い切りました。現金を使って遊技を継続しますか。(y/n)')
+                    n = input_judge(action)
+                    if n is not None:
                         break
-            elif n == 'finished':
-                user = input('お疲れ様でした。Enterキーを押すとメニュー画面が表示されます。')
-            elif n == 'user_choice':
-                user = input('user:')
-            if type(user) is str:
-                return user
+            elif user == 'finished':
+                action = input('お疲れ様でした。Enterキーを押すとメニュー画面が表示されます。')
+            elif user == 'user_choice':
+                action = input('user:')
+            # ユーザーが入力するまでループして待機する
+            if type(action) is str:
+                return action
 
     # 通常時の値
-    def value_noemal(self):
+    @staticmethod
+    def value_normal():
         Pachinko.count = 0
 
     # 確変終了後の初期化
-    def after_bonus(self):
+    @staticmethod
+    def after_bonus():
         Pachinko.count_b = 0  # 回転数
         Pachinko.bonus_pt  = 0  # 獲得出玉（ボーナス終了後の結果表示で使用）
         Pachinko.total_bonus_count = 0  # 結果表示で使用
@@ -255,7 +289,8 @@ class Store:
         Pachinko.small_bonus_count = 0  # 結果表示（内訳）で使用
 
     # 再プレイ時（持ち玉遊技）の値
-    def value_re(self):
+    @staticmethod
+    def value_re():
         Pachinko.replay = 0  # 再プレイ時に使用
         Pachinko.replay_balls = 0  # 持ち玉遊技に使用
 
@@ -284,6 +319,7 @@ class Pachinko(Store):
     def hokuto(self, ball=0):  # ball:遊戯で獲得したball (self.ballとは別) <= 貯玉での遊技で使用
         print('-'*20)
         print('CR北斗の拳で遊びます。')
+        self.gaming_machine += 'CR北斗の拳,'
         # 遊技準備
         while (self.money >= 500) or (Pachinko.bonus_balls > 0):
             # 再プレイではない場合(持ち玉遊技ではない場合)
@@ -312,12 +348,13 @@ class Pachinko(Store):
                             print(f'{re}玉を払い出します。　＜持ち玉:{before}玉 >>> {Pachinko.bonus_balls}玉＞')
                     elif replay_choice == 'n':
                         print('遊技を終了します。')
-                        income = Store.cashing(self)  # 戻り値:income(=ball*4)
+                        income = Store.cashing()  # 戻り値:income(=ball*4)
                         Store.revenue(self, income)
                         Pachinko.user_action('finished')
                         Pachinko.replay = 0  # 再プレイを０に戻す。
                         break
                 Pachinko.user_action('firing')  # ユーザー：Enterキーを押すと玉が発射されます。
+                Store.check_the_game(self)  # 遊技確認
                 # 遊技
                 while (self.ball > 0) or (Pachinko.replay_balls > 0):
                     if (Pachinko.replay == 0) or (Pachinko.replay_balls > 0):
@@ -374,7 +411,7 @@ class Pachinko(Store):
                                             elif jackpot_b == 300:
                                                 Pachinko.small_bonus_count += 1
                                             Pachinko.total_bonus_count += 1
-                                            Store.bonus_info(self, jackpot_b)  # 情報表示
+                                            Store.bonus_info(jackpot_b)  # 情報表示
                                             print()
                                             print(f'*確率変動*: {Pachinko.total_bonus_count}回目')
                                             Pachinko.bonus_list.append(jackpot_b)
@@ -382,7 +419,7 @@ class Pachinko(Store):
                                             input('キーを押すと玉が発射されます。')
                                             continue
                                         elif type(jackpot_b) is str:
-                                            Store.bonus_info(self, jackpot_b)  # 情報表示
+                                            Store.bonus_info(jackpot_b)  # 情報表示
                                             Pachinko.user_action('bonus_end')  # ユーザー：Enter
                                             if Pachinko.replay == 0:
                                                 Pachinko.bonus_balls += self.ball  # 大当り前の持ち玉を獲得出玉に合算
@@ -391,8 +428,8 @@ class Pachinko(Store):
                                                 Pachinko.bonus_balls += Pachinko.replay_balls  # 大当り前の持ち玉を獲得出玉に合算
                                                 Pachinko.replay_balls = 0  # 持ち玉を初期化
                                             Pachinko.before_bonus_balls = Pachinko.bonus_balls  # 再プレイで使用した玉数を計算する時に使用
-                                            Store.result(self)
-                                            Pachinko.after_bonus(self)  # 確変終了後の初期化
+                                            Store.result()
+                                            Pachinko.after_bonus()  # 確変終了後の初期化
                                             Pachinko.replay += 1  # 一度遊技ループから抜ける
                                             break
                     # ボーナス終了後に一度ループを抜けてユーザーのアクション選択画面(持ち玉遊技をするか)に移行する
@@ -421,7 +458,7 @@ class Pachinko(Store):
                         return Pachinko.hokuto(self)  # 再プレイなら自身の関数を呼ぶ
                     else:
                         print('遊技を終了します。')
-                        income = Store.cashing(self)  # 戻り値:income(=ball*4)
+                        income = Store.cashing()  # 戻り値:income(=ball*4)
                         Store.revenue(self, income)
                         Pachinko.replay = 0  # 再プレイを０に戻す。
                         Pachinko.user_action('finished')  # ユーザー：Enter
@@ -446,6 +483,7 @@ class Pachinko(Store):
     def eva(self, ball=0):
         print('-'*20)
         print('CRエヴァンゲリオンで遊びます。')
+        self.gaming_machine += 'CRエヴァンゲリオン,'
         # 遊技準備
         while (self.money >= 500) or (Pachinko.bonus_balls > 0):
             # 再プレイではない場合(持ち玉遊技ではない場合)
@@ -466,7 +504,7 @@ class Pachinko(Store):
                         before = Pachinko.bonus_balls
                         # 持ち玉＜125玉であれば、持ち玉全てを遊技用に払い出す
                         if Pachinko.bonus_balls < re:
-                            Pachinko.replay_balls = Pachinko.bonus_balls  ##################
+                            Pachinko.replay_balls = Pachinko.bonus_balls  #
                             print(f'{Pachinko.replay_balls}玉を払い出します。　[持ち玉:{Pachinko.bonus_balls}玉 >>> 0玉]')
                             Pachinko.bonus_balls = 0
                         else:
@@ -475,12 +513,13 @@ class Pachinko(Store):
                             print(f'{re}玉を払い出します。　＜持ち玉:{before}玉 >>> {Pachinko.bonus_balls}玉＞')
                     elif replay_choice == 'n':
                         print('遊技を終了します。')
-                        income = Store.cashing(self)  # cashing_out() >>> 戻り値:income(=ball*4)
+                        income = Store.cashing()  # cashing_out() >>> 戻り値:income(=ball*4)
                         Store.revenue(self, income)
                         print('お疲れ様でした。Enterキーを押すとメニュー画面に戻ります。。')
                         Pachinko.replay = 0  # 再プレイを０に戻す。
                         break
                 Pachinko.user_action('firing')  # ユーザー：Enterキーを押すと玉が発射されます。
+                Store.check_the_game(self)  # 遊技確認
                 # 遊技開始
                 while (self.ball > 0) or (Pachinko.replay_balls > 0):
                     if (Pachinko.replay == 0) or (Pachinko.replay_balls > 0):
@@ -537,7 +576,7 @@ class Pachinko(Store):
                                     input(f'\nチャンスタイム{chance_time}回中に大当りを引けませんでした。<通常>に戻ります。Enterを押してください。')
                                     Pachinko.bonus_balls += self.ball  # 獲得出玉に小当たり前の持ち玉を足す
                                     self.ball = 0
-                                    Pachinko.result(self)  # 結果表示
+                                    Pachinko.result()  # 結果表示
                                     Pachinko.total_bonus_count = 1  # 大当り回数を初期化
                                     Pachinko.small_bonus_count = 0  # ボーナス内訳を初期化
                                     Pachinko.count_b = 0  # 大当り時の回転数を初期化
@@ -575,7 +614,7 @@ class Pachinko(Store):
                                             Pachinko.bonus_pt += jackpot_b  # 大当り獲得出玉
                                             Pachinko.total_bonus_count += 1
                                             Pachinko.big_bonus_count += 1
-                                            Store.bonus_info(self, jackpot_b)  # 情報表示
+                                            Store.bonus_info(jackpot_b)  # 情報表示
                                             print()
                                             print(f'*確率変動*: {Pachinko.total_bonus_count}回目')
                                             Pachinko.bonus_list.append(jackpot_b)
@@ -592,8 +631,8 @@ class Pachinko(Store):
                                     Pachinko.bonus_balls += Pachinko.replay_balls  # 大当り前の持ち玉を獲得出玉に合算
                                     Pachinko.replay_balls = 0  # 持ち玉を初期化
                                 Pachinko.before_bonus_balls = Pachinko.bonus_balls  # 再プレイで使用した玉数を計算する時に使用
-                                Store.result(self)
-                                Pachinko.after_bonus(self)  # 確変終了後の初期化
+                                Store.result()
+                                Pachinko.after_bonus()  # 確変終了後の初期化
                                 Pachinko.replay += 1
                                 break
                     # ボーナス終了後ループから抜ける
@@ -622,7 +661,7 @@ class Pachinko(Store):
                         return Pachinko.eva(self)  # 再プレイなら自身の関数を呼ぶ
                     else:
                         print('遊技を終了します。')
-                        income = Store.cashing(self)  # 戻り値:income(=ball*4)
+                        income = Store.cashing()  # 戻り値:income(=ball*4)
                         Store.revenue(self, income)
                         Pachinko.replay = 0  # 再プレイを初期化。
                         Pachinko.count_eva = 0  # 回転数を初期化
@@ -647,6 +686,7 @@ class Pachinko(Store):
     def madomagi(self, ball=0):
         print('-'*20)
         print('CR魔法少女まどかマギカで遊びます。')
+        self.gaming_machine += 'CR魔法少女まどかマギカ,'
         # 遊技準備
         while (self.money >= 500) or (Pachinko.bonus_balls > 0):
             # 再プレイではない場合(持ち玉遊技ではない場合)
@@ -676,12 +716,13 @@ class Pachinko(Store):
                             print(f'{re}玉を払い出します。　＜持ち玉:{before}玉 >>> {Pachinko.bonus_balls}玉＞')
                     elif replay_choice == 'n':
                         print('遊技を終了します。')
-                        income = Store.cashing(self)  # cashing_out() >>> 戻り値:income(=ball*4)
+                        income = Store.cashing()  # cashing_out() >>> 戻り値:income(=ball*4)
                         Store.revenue(self, income)
                         Pachinko.user_action('finished')
                         Pachinko.replay = 0  # 再プレイを０に戻す。
                         break
                 Pachinko.user_action('firing')  # ユーザー：Enterキーを押すと玉が発射されます。
+                Store.check_the_game(self)  # 遊技確認
                 # 遊技
                 while (self.ball > 0) or (Pachinko.replay_balls > 0):
                     if (Pachinko.replay == 0) or (Pachinko.replay_balls > 0):
@@ -711,7 +752,7 @@ class Pachinko(Store):
                                 Pachinko.bonus_balls += self.ball  # 獲得出玉に小当たり前の持ち玉を足す
                                 self.ball = 0
                                 Pachinko.bonus_balls = int(Pachinko.bonus_balls)  # 結果をfloatで表示しないため
-                                Pachinko.result(self)  # 結果表示
+                                Pachinko.result()  # 結果表示
                                 Pachinko.total_bonus_count = 0  # 大当り回数を初期化
                                 Pachinko.small_bonus_count = 0  # ボーナス内訳を初期化
                                 Pachinko.count_madoka = 0  # 通常時の回転数を初期化
@@ -754,7 +795,7 @@ class Pachinko(Store):
                                             Pachinko.bonus_pt += jackpot_b  # 大当り獲得出玉
                                             Pachinko.total_bonus_count += 1
                                             Pachinko.big_bonus_count += 1
-                                            Store.bonus_info(self, jackpot_b)  # 情報表示
+                                            Store.bonus_info(jackpot_b)  # 情報表示
                                             print()
                                             print(f'*確率変動*: {Pachinko.total_bonus_count}回目')
                                             Pachinko.bonus_list.append(jackpot_b)
@@ -769,7 +810,7 @@ class Pachinko(Store):
                                             Pachinko.total_bonus_count += 1  # 大当り回数をカウント
                                             Pachinko.big_bonus_count += 1  # 大当り内訳をカウント
                                             big_bonus_plus_count = 0  # 大当り内訳（まどマギ上位用）
-                                            Store.bonus_info(self, jackpot_b)  # 情報表示
+                                            Store.bonus_info(jackpot_b)  # 情報表示
                                             print()
                                             print('おめでとうございます。上位突入大当りを引いたので、確率変動<上位>に突入します。')
                                             print('確率：1/70 -> 1/60、　回転数：80回転　-> 120回転')
@@ -791,7 +832,7 @@ class Pachinko(Store):
                                                         Pachinko.bonus_pt += jackpot_b  # 大当り獲得出玉
                                                         Pachinko.total_bonus_count += 1
                                                         big_bonus_plus_count += 1
-                                                        Store.bonus_info(self, jackpot_b)  # 情報表示
+                                                        Store.bonus_info(jackpot_b)  # 情報表示
                                                         print()
                                                         print(f'*確率変動<上位>*: {big_bonus_plus_count}回目')
                                                         Pachinko.bonus_list.append(jackpot_b_plus)
@@ -810,8 +851,8 @@ class Pachinko(Store):
                                                 Pachinko.replay_balls = 0
                                             Pachinko.before_bonus_balls = Pachinko.bonus_balls  # 再プレイで使用した玉数を計算する時に使用
                                             Pachinko.bonus_balls = int(Pachinko.bonus_balls)  # 結果をfloatで表示しないため
-                                            Store.result(self)
-                                            Pachinko.after_bonus(self)  # 確変終了後の初期化
+                                            Store.result()
+                                            Pachinko.after_bonus()  # 確変終了後の初期化
                                             Pachinko.replay += 1
                                             break
                                 # 確変転落　>>> 転落
@@ -828,8 +869,8 @@ class Pachinko(Store):
                                         Pachinko.replay_balls = 0
                                     Pachinko.before_bonus_balls = Pachinko.bonus_balls  # 再プレイで使用した玉数を計算する時に使用
                                     Pachinko.bonus_balls = int(Pachinko.bonus_balls)  # 結果をfloatで表示しないため
-                                    Store.result(self)
-                                    Pachinko.after_bonus(self)  # 確変終了後の初期化
+                                    Store.result()
+                                    Pachinko.after_bonus()  # 確変終了後の初期化
                                     Pachinko.replay += 1
                                     break
                 # ボーナス０回(bonus_balls=0)
@@ -855,7 +896,7 @@ class Pachinko(Store):
                         return Pachinko.madomagi(self)  # 再プレイなら自身の関数を呼ぶ
                     else:
                         print('遊技を終了します。')
-                        income = Store.cashing(self)  # 戻り値:income(=ball*4)
+                        income = Store.cashing()  # 戻り値:income(=ball*4)
                         Store.revenue(self, income)
                         Pachinko.replay = 0  # 再プレイを初期化。
                         Pachinko.count_eva = 0  # 回転数を初期化
