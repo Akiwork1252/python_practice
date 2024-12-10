@@ -14,7 +14,7 @@ def e_lottery():
     if user == n:
         # 70%で確率変動突入
         if user <= (probability_of_winning * 0.7):
-            # 大当りのうちの25%がビッグボーナス (+1500玉)
+            # 初回大当りのうちの25%がビッグボーナス (+1500玉)
             if user <= ((probability_of_winning * 0.7) * 0.25):
                 big_bonus = 1500
                 print('***BIG BONUS(+1500玉)ゲット*** >>> 確率変動突入!(170回転)')
@@ -58,4 +58,3 @@ def e_lottery_bonus():
     else:
         print('-', end='')
         return None
-
