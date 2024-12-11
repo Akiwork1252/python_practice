@@ -8,17 +8,18 @@ import seaborn as sns
 import pandas as pd
 
 
+# 遊技台の出玉推移グラフの作成と表示(csvファイル作成、DataFrame作成、グラフ作成、表示、pngファイルで保存)
 class InformationDisplay:
     # csvファイル作成(出玉推移グラフ用) カラム：回転数、出玉
-    # 初期データ(回転数:0, 出玉:0)を入力
+    # csvファイルは使い回す。
     @staticmethod
     def create_csvfile():
         with open('game_data/game_data.csv', mode='w', encoding='utf-8') as file:
             writer = csv.writer(file)
             writer.writerow(['num_of_rotations', 'balls'])
-            writer.writerow([0, 0])
 
     # csvファイルに遊技データを追加
+    # (記録タイミング >>> 初打ち(回転数０,玉０)、遊技玉が無くなった時、初当たり時、大当り毎、確率変動終了後、遊技終了後)
     @staticmethod
     def add_data_to_csvfile(count, balls):  # count:回転数、balls:玉数
         with open('game_data/game_data.csv', mode='a', encoding='utf-8') as file:
@@ -49,11 +50,18 @@ class InformationDisplay:
         else:
             return 'anonymous'
 
-    # ユーザー名と日付を受け取り、ファイル名を作成
+    # ユーザー名、日付、遊技台のイニシャルを使用してファイル名を作成
     @staticmethod
-    def make_filename(username, month, day):
+    def make_filename(username, month, day, machine):
+        initial = ''
         date_in_filename = f'{month}{day}'
-        file_name = f'{username}_{date_in_filename}.png'
+        if machine == 'CR北斗の拳':
+            initial = 'h'
+        elif machine == 'CRエヴァンゲリオン':
+            initial = 'e'
+        elif machine == 'CR魔法少女まどかマギカ':
+            initial = 'm'
+        file_name = f'{username}_{date_in_filename}_{initial}.png'
         return file_name
 
     # 遊技台とユーザー名と日付を受け取り、タイトル用の文字列を作成
@@ -72,7 +80,7 @@ class InformationDisplay:
         y = df[col_balls]
         # グラフの表示
         fig, ax = plt.subplots()
-        ax.plot(x, y, marker='o')
+        ax.plot(x, y, marker='o', markersize=3, markerfacecolor='r')
         ax.set_title(title)
         ax.set_xlabel('回転数')
         ax.set_ylabel('玉数')
@@ -80,10 +88,9 @@ class InformationDisplay:
         fig.savefig(f'game_data/{filename}')
         # グラフを５秒表示
         while True:
-            action = input('Enterキーを押すとグラフが表示されます。グラフは１０秒間表示された後、自動で閉じます。')
+            action = input('Enterキーを押すとグラフが表示されます。')
             if type(action) is str:
                 break
-        plt.pause(10)
         plt.close(fig)
 
     # 統計データ計算、表示
@@ -93,23 +100,13 @@ class InformationDisplay:
 
 
 if __name__ == '__main__':
-    InformationDisplay.create_csvfile()
-    InformationDisplay.add_data_to_csvfile(173, -5000)
-    InformationDisplay.add_data_to_csvfile(252, -3500)
-    InformationDisplay.add_data_to_csvfile(276, -7000)
-    InformationDisplay.add_data_to_csvfile(281, 500)
-    InformationDisplay.add_data_to_csvfile(301, -2000)
-    InformationDisplay.add_data_to_csvfile(350, -1500)
-    InformationDisplay.add_data_to_csvfile(371, -1000)
-    InformationDisplay.add_data_to_csvfile(390, 500)
-    InformationDisplay.add_data_to_csvfile(467, 3000)
-    InformationDisplay.add_data_to_csvfile(497, 4500)
-    InformationDisplay.add_data_to_csvfile(517, 9000)
+    # with open('game_data/game_data.csv', 'r', encoding='utf-8') as file:
+    #     reader = csv.reader(file)
+    #     for row in reader:
+    #         print(row)
 
     df = InformationDisplay.create_dataframe()
-    month, day = InformationDisplay.date()
-    name = InformationDisplay.name_judge('akinori')
-    machine = 'CRエヴァンゲリオン'
-    title = InformationDisplay.make_title_name(machine, name, month, day)
-    filename = InformationDisplay.make_filename(name, month, day)
-    InformationDisplay.view_graph(df, title, filename)
+    x = df['num_of_rotations']
+    y = df['balls']
+    plt.plot(x, y, marker='o', markersize=3, markerfacecolor='r')
+    plt.show()
