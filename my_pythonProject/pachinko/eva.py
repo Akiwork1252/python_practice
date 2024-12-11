@@ -1,9 +1,9 @@
 import random
-
 # CRエヴァンゲリオン:
 # (通常時の大当り確率): 1/319, (初当たり出玉): +450(75%) or +1500(25%),
 # (初当たり振り分け): 確率変動:70%, チャンスタイム(100回転:大当り確率1/170):30%, (確率変動時の大当り確率): 当選:1/90 回転数:170回転,
 # (確率変動時の出玉振り分け): ALL+1500, (継続率): 85%
+
 
 # 抽選（通常時）
 def e_lottery():
@@ -31,6 +31,7 @@ def e_lottery():
         print('-', end='')
         return None
 
+
 # 抽選（チャンスタイム）
 def e_lottery_chance():
     probability_of_winning = 170
@@ -44,6 +45,7 @@ def e_lottery_chance():
     else:
         print('-', end='')
         return None
+
 
 # 抽選（確率変動時） 大当り(1/90)
 def e_lottery_bonus():
