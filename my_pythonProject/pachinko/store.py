@@ -130,6 +130,7 @@ class Store:
 
     # パチンコ玉に変換する
     def lend(self):
+        self.play += 1  # 遊技確認。一回でもプレイしたらデータベースに履歴を残す。
         while True:
             # print('\n500円で125玉と交換できます。')
             choice = input('\n500円で125玉と交換できます。交換しますか？(y/n): ')
@@ -200,7 +201,7 @@ class Store:
         income = Pachinko.bonus_balls * 4
         input(f'持ち玉<{Pachinko.bonus_balls}玉>を1玉4円で換金します。Enterキーを押してください。')
         print('\n', '='*8, '換金', '='*8)
-        print(f'持ち玉{Pachinko.bonus_balls}玉　>>> {income}円')
+        print(f'持ち玉:{Pachinko.bonus_balls}玉　>>> {income}円')
         print('='*23)
         Pachinko.bonus_balls = 0  # ボーナス出玉を０にする。
         return income
@@ -216,7 +217,7 @@ class Store:
     def revenue(self, income):
         input('収支を表示します。Enterキーを押してください。')
         before = self.money
-        self.money += income  # 出玉を現金換算して加算
+        self.money += income  # 出玉を現金換算して所持金に加算
         revenue = self.money - self.investment_amount  # 換金後の所持金から総投資額を引いて収益を計算
         print('\n', '='*8, '収支', '='*8)
         print(f'所持金：{before}円　>>> {self.money}円')
@@ -311,13 +312,16 @@ class Store:
         # DataFrame作成
         df = InformationDisplay.create_dataframe()
 
-        # 出玉推移グラフをpngファイルで保存する。　ファイル名："{ユーザー名(英字３文字or匿名)}_{日付(４桁)_{遊技台(イニシャル)}}.png"
+        # 出玉推移グラフをpngファイルで保存する。　
+        # ファイル名 >>> "{ユーザー名(英字３文字or匿名)}_{日付(４桁)_{遊技台(イニシャル)}}.png"
         # 日付を取得　>>> 戻り値：month, day
         month, day = InformationDisplay.date()
         # ユーザー名が英字か判定　>>> 戻り値：英字 → 最初３文字、英字ではない → anonymous(アノニマス)
         name = InformationDisplay.name_judge(self.name)
-        # 名前・日付からファイル名を作成 >>> 戻り値：文字列
-        filename = InformationDisplay.make_filename(name, month, day, self.gaming_machine)
+        # 遊技台をイニシャルで返す　>>> 戻り値：文字列
+        model_initial = InformationDisplay.convert_to_initials(self.gaming_machine)
+        # 名前、日付、遊技台を使用してファイル名を作成 >>> 戻り値：文字列
+        filename = InformationDisplay.make_filename(name, month, day, model_initial)
 
         # 遊技台・ユーザー名・日付から、グラフのタイトルを作成 >>> 戻り値：文字列
         title = InformationDisplay.make_title_name(self.gaming_machine, name, month, day)
@@ -326,8 +330,8 @@ class Store:
 
 
 # ============================================================================================
-# パチンコ台のクラス
-# CR北斗の拳(1/349)、CRエヴァンゲリオン(1/319)、CR魔法少女まどかマギカ(1/199)
+# パチンコ台のクラス（3機種）
+# ・CR北斗の拳(1/349)、・CRエヴァンゲリオン(1/319)、・CR魔法少女まどかマギカ(1/199)
 class Pachinko(Store):
     total_count = 0  # 遊技を通した全ての回転数(出玉推移グラフで使用)
     total_balls = 0  # 遊技を通した出玉(出玉推移グラフで使用)
@@ -359,7 +363,7 @@ class Pachinko(Store):
 # スペック:CR北斗の拳:
 # (通常時の大当り確率): 1/349, (初当たり出玉): +300(4/5) or +1500(1/5),
 # (確率変動突入率): 100%, (確率変動時の大当り確率): 当たり:1/40, 転落:1/150,
-# (確率変動時の出玉振り分け): +300(1/4) or +1500(3/4)
+# (確率変動時の出玉振り分け): +300(1/4) or +1500(3/4)、(大当り継続率): 88%
     def hokuto(self, ball=0):  # ball:遊戯で獲得したball (self.ballとは別) <= 貯玉での遊技で使用
         print('-'*20)
         print('CR北斗の拳で遊びます。')
@@ -529,6 +533,7 @@ class Pachinko(Store):
             print('それ以外のキーを入力するとメニュー画面に戻ります。メニュー画面からお金の追加を行うことができます。')
             exiting = Pachinko.user_action('user_choice')  # ユーザー：退店orメニュー画面選択
             if exiting == '*':
+                DB.updating_money(self.name, self.age, self.money, self.play)
                 print('またのご来店をお待ちしております。')
                 self.investment_amount = 0  # 投資額の初期化
                 Pachinko.count_hokuto = 0  # 回転数を初期化
@@ -537,8 +542,7 @@ class Pachinko(Store):
 # CRエヴァンゲリオン:
 # (通常時の大当り確率): 1/319, (初当たり出玉): +450(75%) or +1500(25%),
 # (初当たり振り分け): 確率変動:70%, チャンスタイム(100回転:大当り確率1/170):30%, (確率変動時の大当り確率): 当選:1/90 回転数:170回転,
-# (確率変動時の出玉振り分け): ALL+1500,
-
+# (確率変動時の出玉振り分け): ALL+1500、(大当り継続率): 85%
     def eva(self, ball=0):
         # チャンスタイム引き戻し対策
         chance_time = 0
@@ -761,6 +765,7 @@ class Pachinko(Store):
             print('それ以外のキーを入力するとメニュー画面に戻ります。メニュー画面からお金の追加を行うことができます。')
             exiting = Pachinko.user_action('user_choice')  # ユーザー：退店orメニュー画面選択
             if exiting == '*':
+                DB.updating_money(self.name, self.age, self.money, self.play)
                 print('またのご来店をお待ちしております。')
                 self.investment_amount = 0  # 投資額の初期化
                 Pachinko.count_eva = 0
@@ -769,8 +774,7 @@ class Pachinko(Store):
 # CR魔法少女まどかマギカ:
 # (通常時の大当り確率): 1/199, (初当たり出玉): +450(90%) or +1500(10%),
 # (初当たり振り分け): 確率変動:50%, 通常:50%, (確率変動時の大当り確率): 1/70 回転数:70回転, (確率変動<上位>時の確率): 1/60: 回転数:120回転,
-# (確率変動時の出玉振り分け): ALL+1500,
-
+# (確率変動時の出玉振り分け): ALL+1500、(大当り継続率):68% or 86%, (補足)確率変動中の当たり1/3で確率変動<上位>に突入
     def madomagi(self, ball=0):
         print('-'*20)
         print('CR魔法少女まどかマギカで遊びます。')
@@ -1018,6 +1022,7 @@ class Pachinko(Store):
             print('それ以外のキーを入力するとメニュー画面に戻ります。メニュー画面からお金の追加を行うことができます。')
             exiting = Pachinko.user_action('user_choice')  # ユーザー：退店orメニュー画面選択
             if exiting == '*':
+                DB.updating_money(self.name, self.age, self.money, self.play)
                 print('またのご来店をお待ちしております。')
                 self.investment_amount = 0  # 投資額の初期化
                 Pachinko.count_eva = 0

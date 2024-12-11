@@ -50,18 +50,24 @@ class InformationDisplay:
         else:
             return 'anonymous'
 
+    # 遊技台のイニシャルを返す（ファイル名に使用）
+    @staticmethod
+    def convert_to_initials(model):
+        model_initial = None
+        if model == 'CR北斗の拳':
+            model_initial = 'h'
+        elif model == 'CRエヴァンゲリオン':
+            model_initial = 'e'
+        elif model == 'CR魔法少女まどかマギカ':
+            model_initial = 'm'
+        return model_initial
+
     # ユーザー名、日付、遊技台のイニシャルを使用してファイル名を作成
     @staticmethod
-    def make_filename(username, month, day, machine):
+    def make_filename(username, month, day, model):
         initial = ''
         date_in_filename = f'{month}{day}'
-        if machine == 'CR北斗の拳':
-            initial = 'h'
-        elif machine == 'CRエヴァンゲリオン':
-            initial = 'e'
-        elif machine == 'CR魔法少女まどかマギカ':
-            initial = 'm'
-        file_name = f'{username}_{date_in_filename}_{initial}.png'
+        file_name = f'{username}_{date_in_filename}_{model}.png'
         return file_name
 
     # 遊技台とユーザー名と日付を受け取り、タイトル用の文字列を作成
@@ -91,6 +97,7 @@ class InformationDisplay:
             action = input('Enterキーを押すとグラフが表示されます。')
             if type(action) is str:
                 break
+        plt.show()
         plt.close(fig)
 
     # 統計データ計算、表示
