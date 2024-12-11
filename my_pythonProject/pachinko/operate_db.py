@@ -9,19 +9,23 @@ class DB:
         # <pachinko.db>
         # userテーブル(名前、年齢、所持金)
         # historyテーブル(日付、名前、年齢、遊技台、収支)
+        db_instruction = '''
+        CREATE TABLE IF NOT EXISTS history(date CHAR(20), name CHAR(20), age INT, machine CHAR(20), income CHAR(10))
+        '''
         con = sqlite3.connect('pachinko.db')
         cursor = con.cursor()
         cursor.execute('CREATE TABLE IF NOT EXISTS user(name CHAR(20), age INT, money INT)')
-        cursor.execute('CREATE TABLE IF NOT EXISTS history(date CHAR(20), name CHAR(20), '
-                       'age INT, machine CHAR(20), income INT)')
+        cursor.execute(db_instruction)
         con.commit()
 
-    # def del_table():
-    #     con = sqlite3.connect('pachinko.db')
-    #     cursor = con.cursor()
-    #     cursor.execute('DROP TABLE user')
-    #     cursor.execute('DROP TABLE history')
-    #     con.commit()
+    # テーブル削除（プログラムの試行でデータが増えた時に使用）
+    @staticmethod
+    def del_table():
+        con = sqlite3.connect('pachinko.db')
+        cursor = con.cursor()
+        cursor.execute('DROP TABLE user')
+        cursor.execute('DROP TABLE history')
+        con.commit()
 
     # 来店時　ユーザー情報を確認、履歴が無ければデータベースに作成
     @staticmethod
@@ -74,3 +78,5 @@ class DB:
         cursor.execute('INSERT INTO history VALUES(?, ?, ?, ?, ?)', [date, name, age, machine, income])
         con.commit()
 
+
+# DB.del_table()
