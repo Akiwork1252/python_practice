@@ -55,6 +55,7 @@ class Main:
             while True:
                 choice = char.display()
                 if choice is None:
+                    DB.updating_money(char.name, char.age, char.money, char.play)  # 遊技していたら所持金を更新
                     print('またのご来店をお待ちしております。')
                     break
                 else:

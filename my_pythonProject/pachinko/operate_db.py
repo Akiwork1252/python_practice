@@ -69,12 +69,26 @@ class DB:
             print('遊技履歴が存在しませんでした。')
         con.commit()
 
-    # 遊技終了後のデータをテーブル(history)に追加する　{日付、名前、年齢、遊技台、収支}
+    # 遊技終了後のデータをテーブル(history)に追加する　history{日付、名前、年齢、遊技台、収支}
     @staticmethod
     def save_when_exit(date, name, age, machine, income):
         con = sqlite3.connect('pachinko.db')
         cursor = con.cursor()
         cursor.execute('INSERT INTO history VALUES(?, ?, ?, ?, ?)', [date, name, age, machine, income])
+        con.commit()
+
+    # 退店時にテーブル(user)の所持金を更新する user(名前、年齢、所持金)
+    @staticmethod
+    def updating_money(name, age, money, check):
+        con = sqlite3.connect('pachinko.db')
+        cursor = con.cursor()
+        if check != 0:  # 遊技確認
+            cursor.execute('UPDATE user set money = (?) WHERE (name == (?)) == (age == (?))', [money, name, age])
+        print('所持金の更新を行いました。次回来店時にご利用できます。')
+        while True:
+            action = input('Enterキーを押してください。')
+            if type(action) is str:
+                break
         con.commit()
 
 
