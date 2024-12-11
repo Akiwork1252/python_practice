@@ -25,7 +25,7 @@ class Main:
                 print('半角英数字で入力してください。(例:32)')
             else:
                 break
-        # 名前と年齢でデータベースを検索して、データがあれば、前回の所持金を返す。データが無ければ作成する。
+        # 名前と年齢でデータベースを検索。データがあれば、前回の所持金を返す。データが無ければアカウントを作成する。
         user = DB.user_search_and_add(name, age)  # 戻り値 >>> データあり:int(money)、データなし:tuple(name, age, money)
         if type(user) is tuple:
             # char:インスタンス作成
@@ -33,7 +33,6 @@ class Main:
         else:
             # char:インスタンス作成(前回の所持金を利用)
             char = Store(name, age, user)
-        # char:インスタンス作成
         print('下記のアカウントで入店します。')
         print('-'*20)
         print(f'名前: {char.name}')
@@ -66,4 +65,3 @@ class Main:
 
 
 Main.main()
-

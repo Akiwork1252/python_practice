@@ -11,8 +11,6 @@ from madomagi import m_lottery, m_lottery_bonus, m_lottery_bonus_plus
 #  インスタンス作成、入場制限、機種の表示、機種スペックの表示
 #  パチンコの共通機能(玉変換、ヘソ入賞判定(通常・確変)、当たり抽選(通常・確変)、回転数表示(通常・確変)、Bonus結果、換金)
 class Store:
-    history_dict = {}  # データベース保存用
-
     # コンストラクタ
     def __init__(self, name, age, money=0):
         self.name = name
@@ -21,7 +19,7 @@ class Store:
         self.ball = 0  # 入店後の初遊技で所持金からパチンコ玉に変換する。退店時は現金に戻す
         self.investment_amount = 0  # 総投資額を計算する
         self.play = 0  # 遊技確認で使用。１回でも玉を発射すると＋１して、データベースに遊技履歴を残す。
-        self.gaming_machine = ''  # 遊技機種を保存
+        self.gaming_machine = ''  # 遊技機種を保存(遊技履歴保存のため)
 
     # エントランス(20歳未満/所持金500円未満お断り）
     def entrance(self):
@@ -173,8 +171,8 @@ class Store:
         if type(jackpot_b) is str:
             print(f' info:(転落当たり：{Pachinko.count_b+1}回転目)')
         else:
-            print(f' info:(大当り獲得：{Pachinko.count_b+1}回転目)')
-            print(f'     :(大当り{Pachinko.total_bonus_count}回目獲得! 総出玉:{Pachinko.bonus_pt-jackpot_b}玉 ＋ {jackpot_b}玉)')
+            print(f' info:(回転数：{Pachinko.count_b+1}回転)')
+            print(f'     :(大当り{Pachinko.total_bonus_count}回目獲得! 総出玉:{Pachinko.bonus_pt-jackpot_b}玉 ＋ "{jackpot_b}玉")')
 
     # 大当り終了時の結果を表示
     @staticmethod
@@ -208,7 +206,7 @@ class Store:
         today = f'{dt.year}/{dt.month}/{dt.day}'
         return today
 
-    # 収益の計算と表示
+    # 収益の計算と表示、データベース(TABLE<history>)に遊技履歴を保存
     def revenue(self, income):
         input('収支を表示します。Enterキーを押してください。')
         before = self.money
@@ -217,17 +215,19 @@ class Store:
         print('\n', '='*8, '収支', '='*8)
         print(f'所持金：{before}円　>>> {self.money}円')
         print(f'総投資額:{self.investment_amount}円')
-        date = Store.get_date()  # 日付を取得
-        # history(date CHAR(20), name CHAR(20), age INT, machine CHAR(20), income INT)
-        Store.history_dict.update(date=date, name=self.name, age=self.age, )
         if revenue > 0:
             print(f'プラス{revenue}円でした。')
             print('='*23)
             print('おめでとうございます。', end='')
+            revenue = '+' + str(revenue)
         else:
             print(f'マイナス{-revenue}円でした。')
             print('='*23)
             print('残念でしたね。', end='')
+            revenue = '-' + str(revenue)
+        date = Store.get_date()  # 日付を取得
+        # history(date CHAR(20), name CHAR(20), age INT, machine CHAR(20), income INT)
+        DB.save_when_exit(date, self.name, self.age, self.gaming_machine, revenue)  # 遊技履歴作成
 
     # ユーザーの入力
     @staticmethod
