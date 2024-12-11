@@ -1,5 +1,6 @@
 import datetime
 import random
+from info import InformationDisplay
 from operate_db import DB
 from hokuto import h_lottery, h_lottery_bonus
 from eva import e_lottery, e_lottery_chance, e_lottery_bonus
@@ -21,7 +22,7 @@ class Store:
         self.play = 0  # 遊技確認で使用。１回でも玉を発射すると＋１して、データベースに遊技履歴を残す。
         self.gaming_machine = ''  # 遊技機種を保存(遊技履歴保存のため)
 
-    # エントランス(20歳未満/所持金500円未満お断り）
+    # エントランス (戻り値　>>> None:20歳未満/所持金500円未満お断り）
     def entrance(self):
         min_age = 20
         min_money = 500
@@ -31,6 +32,7 @@ class Store:
             print(f'パチンコで遊ぶには{min_money}円以上必要です。')
         else:
             print('いらっしゃいませ!!')
+            InformationDisplay.create_csvfile()  # csvファイル作成(出玉推移グラフ用) + 初期データ(回転数:0, 出玉:0)を入力
             return self.age
 
     # 選択機種の表示  (戻り値：choice)
@@ -294,9 +296,12 @@ class Store:
         Pachinko.replay = 0  # 再プレイ時に使用
         Pachinko.replay_balls = 0  # 持ち玉遊技に使用
 
+
 # ================================================================================
 # パチンコ台のクラス
 class Pachinko(Store):
+    total_count = 0  # 遊技を通した全ての回転数(出玉推移グラフで使用)
+    total_balls = 0  # 遊技を通した出玉(出玉推移グラフで使用)
     count_hokuto = 0  # 通常時回転数(北斗)
     count_eva = 0  # 通常時回転数(エヴァ)
     count_madoka = 0  # 通常時回転数(まどか)
@@ -310,12 +315,17 @@ class Pachinko(Store):
     replay = 0  # 大当り終了後に再プレイするときに使用
     replay_balls = 0  # 持ち玉遊技で使用
     bonus_list = []  # ボーナスを記録-
+
+    # # 遊技中に総回転数と出玉を受け取る。
+    # def data_record(self, count, balls):
+    #     Pachinko.total_count += count
+    #     Pachinko.
+
 # ==================================================================================================
 # スペック:CR北斗の拳:
 # (通常時の大当り確率): 1/349, (初当たり出玉): +300(4/5) or +1500(1/5),
 # (確率変動突入率): 100%, (確率変動時の大当り確率): 当たり:1/40, 転落:1/150,
 # (確率変動時の出玉振り分け): +300(1/4) or +1500(3/4)
-
     def hokuto(self, ball=0):  # ball:遊戯で獲得したball (self.ballとは別) <= 貯玉での遊技で使用
         print('-'*20)
         print('CR北斗の拳で遊びます。')

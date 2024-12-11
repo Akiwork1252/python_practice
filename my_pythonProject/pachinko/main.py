@@ -1,4 +1,3 @@
-import sqlite3
 from operate_db import DB
 from store import Store, Pachinko
 
@@ -64,4 +63,5 @@ class Main:
                         break
 
 
-Main.main()
+if __name__ == '__main__':
+    Main.main()
