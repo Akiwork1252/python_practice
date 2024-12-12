@@ -11,7 +11,6 @@ class Main:
         'E': Pachinko.eva,
         'M': Pachinko.madomagi,
     }
-    play_dict = {}
 
     @staticmethod
     def account_check():
@@ -32,26 +31,27 @@ class Main:
         else:
             # char:インスタンス作成(前回の所持金を利用)
             char = Store(name, age, user)
-        print('下記のアカウントで入店します。')
-        print('-'*20)
-        print(f'名前: {char.name}')
-        print(f'年齢: {char.age}歳')
-        print(f'所持金: {char.money}円')
-        print('-'*20)
-        while True:
-            action = input('確認したらEnterキーを押してください。')
-            if type(action) is str:
-                break
-        return char
+        judge = char.entrance()
+        if judge is None:
+            return None
+        else:
+            print('下記のアカウントで入店します。')
+            print('-'*20)
+            print(f'名前: {char.name}')
+            print(f'年齢: {char.age}歳')
+            print(f'所持金: {char.money}円')
+            print('-'*20)
+            while True:
+                action = input('確認したらEnterキーを押してください。')
+                if type(action) is str:
+                    break
+            return char
 
     @staticmethod
     def main():
         DB.create_table()  # テーブルの作成（初回のみ）
         char = Main.account_check()
-        judge = char.entrance()
-        if judge is None:
-            print('またのご来店をお待ちしております。')
-        else:
+        if char is not None:
             while True:
                 choice = char.display()
                 if choice is None:
@@ -62,6 +62,8 @@ class Main:
                     ex = Main.func_dict[choice](char)
                     if ex == '*':
                         break
+        else:
+            print('またのご来店をお待ちしております。')
 
 
 if __name__ == '__main__':

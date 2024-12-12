@@ -10,7 +10,7 @@ import pandas as pd
 
 # 遊技台の出玉推移グラフの作成と表示(csvファイル作成、DataFrame作成、グラフ作成、表示、pngファイルで保存)
 class InformationDisplay:
-    # csvファイル作成(出玉推移グラフ用) カラム：回転数、出玉
+    # 出玉推移グラフ作成のためのcsvファイル作成 >>> カラム(num_of_rotations:回転数、balls:出玉)
     # csvファイルは使い回す。
     @staticmethod
     def create_csvfile():
