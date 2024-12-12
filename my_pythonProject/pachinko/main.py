@@ -49,17 +49,17 @@ class Main:
 
     @staticmethod
     def main():
-        DB.create_table()  # テーブルの作成（初回のみ）
+        DB.create_table()  # テーブルがなければ作成
         char = Main.account_check()
         if char is not None:
             while True:
-                choice = char.display()
+                choice = char.display()  # 予期せぬ値を受け取らないようにdisplay()で対応済
                 if choice is None:
                     DB.updating_money(char.name, char.age, char.money, char.play)  # 遊技していたら所持金を更新
                     print('またのご来店をお待ちしております。')
                     break
                 else:
-                    ex = Main.func_dict[choice](char)
+                    ex = Main.func_dict[choice](char)  # 関数dictionaryから選択された関数を呼び出す
                     if ex == '*':
                         break
         else:
