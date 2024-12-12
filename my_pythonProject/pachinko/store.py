@@ -131,10 +131,9 @@ class Store:
     @staticmethod
     def display_spec():
         # ゲームスペック　[通常時大当り確率、初当たり出玉、RUSH突入率、RUSH時の大当り確率、RASH時の出玉振り分け]
-
         input('\n各機種のスペックを表示します。Enterキーを押してください。')
         print('*'*20, 'スペック一覧', '*'*20)
-        DB.get_game_specs_from_db()
+        DB.get_game_specs_from_db()  # データベースからスペックを取得
         print('*'*50)
         while True:  # ユーザーの応答を待つ
             enter = input('Enterキーを押すとメニュー画面に戻ります。')
