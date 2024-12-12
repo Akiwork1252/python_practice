@@ -2,6 +2,50 @@ import sqlite3
 
 
 class DB:
+    # 機種のスペックをデータベースに保存
+    @staticmethod
+    def create_spec_db():
+        con = sqlite3.connect('spec.db')
+        cursor = con.cursor()
+        create_table_txt = '''Name TEXT, Probability_Normal TEXT, Payout_First TEXT, 
+        Distribution_First TEXT, Probability_Rush TEXT, Distribution_Rush TEXT, 
+        Continuation_Probability TEXT, Supplement TEXT'''
+        cursor.execute(f'CREATE TABLE spec({create_table_txt})')
+        values_hokuto = '''
+        'CR北斗の拳', '1/349', '+300(80%) or +1500(20%)', 
+        '確変:100%','当:1/25 or 転落:1/180[回転数:いずれか引くまで]', '+300(25%) or +1500(75%)', '88%', 'なし'
+        '''
+        values_eva = '''
+        'CRエヴァンゲリオン', '1/319', '+450(75%) or +1500(25%)', 
+        '確変:70%、チャンスタイム:30%','当:1/90[回転数:170回]', 'ALL+1500', '85%', 'なし'
+        '''
+        values_madomagi = '''
+        'CR魔法少女まどかマギカ', '1/199', '+450(90%) or +1500(10%)', 
+        '確変:50%、通常:50%', '当:1/70[回転数:80回]、<上位>当:1/80[回転数:120回]', 'ALL+1500', 
+        '68% or 86%<上位>', '確率変動中の当たり1/4で確率変動<上位>に突入'
+        '''
+        cursor.execute(f'INSERT INTO spec VALUES({values_hokuto})')
+        cursor.execute(f'INSERT INTO spec VALUES({values_eva})')
+        cursor.execute(f'INSERT INTO spec VALUES({values_madomagi})')
+        con.commit()
+
+    # 機種スペックを取り出し表示
+    @staticmethod
+    def get_game_specs_from_db():
+        con = sqlite3.connect('spec.db')
+        cursor = con.cursor()
+        itr = cursor.execute('SELECT * FROM spec')
+        for row in itr:
+            model, normal_p, payout_f, dist_f, rush_p, dist_r, conti_p, supp = row
+            print(f'''
+            --{model}--
+            (通常時の大当り確率): {normal_p}, (初当たり出玉): {payout_f},
+            (初当たり振り分け): {dist_f}, (確率変動時の大当り確率): {rush_p},
+            (確率変動時の出玉振り分け): {dist_r}, (大当り継続率): {conti_p},
+            (補足): {supp}
+            ''')
+        con.close()
+
     # テーブル作成(初回のみ）
     @staticmethod
     def create_table():
@@ -124,4 +168,11 @@ class DB:
             print('入力が正しくありません。')
         con.close()
 
-# DB.del_table()
+
+# con = sqlite3.connect('spec.db')
+# cursor = con.cursor()
+# cursor.execute('DROP TABLE spec')
+# DB.create_spec_db()
+# con.commit()
+# DB.get_game_specs_from_db()
+# con.close()

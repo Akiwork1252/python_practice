@@ -2,7 +2,7 @@ import random
 # CR魔法少女まどかマギカ:
 # (通常時の大当り確率): 1/199, (初当たり出玉): +450(90%) or +1500(10%),
 # (確率変動突入率): 50%, (確率変動時の大当り確率): 1/70 回転数:80回転, (確率変動<上位>時の確率): 1/60: 回転数:120回転,
-# (確率変動時の出玉振り分け): ALL+1500, (大当り継続率):68% or 86%, (補足)確率変動中の当たり1/3で確率変動<上位>に突入
+# (確率変動時の出玉振り分け): ALL+1500, (大当り継続率):68% or 86%, (補足)確率変動中の当たり1/4で確率変動<上位>に突入
 
 
 # 抽選（通常）
@@ -32,14 +32,14 @@ def m_lottery():
         return None
 
 
-# 抽選（確率変動） 大当り(1/70: 80回)、当たりの内1/3で上位突入
+# 抽選（確率変動） 大当り(1/70: 80回)、当たりの内1/4で上位突入
 def m_lottery_bonus():
     winning = 70
     n_winning = random.randint(1, winning)
     user = random.randint(1, winning)
     if user == n_winning:
         big_bonus = 1500
-        lucky = random.randint(0, 2)
+        lucky = random.randint(0, 3)
         if lucky == 0:
             print('!!!<Lucky>!!!', end='')
             input('*BIG BONUS(+1500玉)* を引きました。>>> 確率変動<上位>突入!(120回転) Enterキーを押してください。')
