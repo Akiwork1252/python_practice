@@ -19,6 +19,7 @@ class Store:
         self.name = name
         self.age = age  # 入店時とデータベースの操作に使用
         self.money = money  # 所持金
+        self.money_at_time_of_entry = 0  # 入店時の所持金を記録
         self.ball = 0  # 入店後の初遊技で所持金からパチンコ玉に変換する。退店時は現金に戻す
         self.investment_amount = 0  # 総投資額を計算する
         self.play = 0  # 遊技確認で使用。１回でも玉を発射すると＋１して、データベースに遊技履歴を残す。
@@ -34,6 +35,7 @@ class Store:
             print(f'パチンコで遊ぶには{min_money}円以上必要です。')
         else:
             print('いらっしゃいませ!!')
+            self.money_at_time_of_entry = self.money
             InformationDisplay.create_csvfile()  # csvファイル作成(出玉推移グラフ用) + 初期データ(回転数:0, 出玉:0)を入力
             return self.age
 
@@ -48,6 +50,7 @@ class Store:
             '=': '・過去の遊技履歴を表示する。',
             '$': '・お金を追加する。',
             '*': '・店を出る。',
+            'aki': '管理者操作(パスワード必要)'
         }
         while True:
             input('Enterキーを押すとメニュー画面が表示されます。'
@@ -63,8 +66,16 @@ class Store:
             print('-'*20)
 
             choice = Pachinko.user_action('user_choice')  # ユーザーがEnterキーを入力するまで待機
+            # 遊技台を選択
+            if (choice == 'H') or (choice == 'E') or (choice == 'M'):
+                if self.money < 500:
+                    input('お金がないので遊べません。Enterキーを押してください。')
+                else:
+                    print(f'あなたは{game[choice]}を選びました。')
+                    break
+
             # 機種スペックを表示
-            if choice == '#':
+            elif choice == '#':
                 Store.display_spec()
 
             # 遊技履歴を表示
@@ -78,21 +89,42 @@ class Store:
                 money = int(input('(例:5000): '))
                 self.money += money  # 所持金を増やす
                 input(f'あなたの所持金は{self.money}円になりました。Enterキーを押してください。')
+
             # 退店
             elif choice == '*':
                 self.investment_amount = 0  # 退店時に投資額を初期化
                 return None
 
-            # ユーザーが機種を選択した場合
-            elif (choice in game) and (choice != '#') and (choice != '*') and (choice != '$') and (choice != '-'):
-                if self.money < 500:
-                    input('お金がないので遊べません。Enterキーを押してください。')
+            # 管理者操作
+            elif choice == 'aki':
+                menu = {
+                    1: '顧客確認',
+                    2: '遊技履歴',
+                }
+                password = 'hoge'
+                print('管理者専用の操作です。パスワードを入力してください。')
+                text = input('password: ')
+                if text == password:
+                    while True:
+                        print('以下から操作を選択して対応キーを入力してください。')
+                        for k, v in menu.items():
+                            print(f'{v}：キー >>> {k}')
+                        choice = int(input('管理者: '))
+                        if choice in menu:
+                            Pachinko.check_the_db(choice)
+                        choice = input('操作を繰り返しますか？(y/n)')
+                        if choice == 'y':
+                            continue
+                        else:
+                            print('管理者操作を終了します。')
+                            break
                 else:
-                    print(f'あなたは{game[choice]}を選びました。')
-                    break
+                    print('パスワードが一致しませんでした。メニュー画面に戻ります。')
 
+            # メニュー以外の入力
             else:
                 print('入力されたキーが正しくありません。')
+
         return choice
 
     # 機種スペックの表示
@@ -218,20 +250,21 @@ class Store:
         input('収支を表示します。Enterキーを押してください。')
         before = self.money
         self.money += income  # 出玉を現金換算して所持金に加算
-        revenue = self.money - self.investment_amount  # 換金後の所持金から総投資額を引いて収益を計算
+        revenue = income - self.investment_amount  # 収益 = 所得 - 投資額
         print('\n', '='*8, '収支', '='*8)
-        print(f'所持金：{before}円　>>> {self.money}円')
+        print(f'入店時：{self.money_at_time_of_entry}円')
         print(f'総投資額:{self.investment_amount}円')
+        print(f'現在の所持金：{before}円 + {income}円　>>> {self.money}円')
         if revenue > 0:
             print(f'プラス{revenue}円でした。')
             print('='*23)
             print('おめでとうございます。', end='')
-            revenue = '+' + str(revenue)
+            revenue = '+' + str(revenue)  # DB保存用として文字列に変換
         else:
             print(f'マイナス{-revenue}円でした。')
             print('='*23)
             print('残念でしたね。', end='')
-            revenue = '-' + str(revenue)
+            revenue = str(revenue)  # DB保存用として文字列に変換
         date = Store.get_date()  # 日付を取得
         # history(date CHAR(20), name CHAR(20), age INT, machine CHAR(20), income INT)
         DB.save_when_exit(date, self.name, self.age, self.gaming_machine, revenue)  # 遊技履歴作成
@@ -327,6 +360,12 @@ class Store:
         title = InformationDisplay.make_title_name(self.gaming_machine, name, month, day)
         # グラフ作成、表示(10秒)、pngファイルで保存
         InformationDisplay.view_graph(df, title, filename)  # 引数：DataFrame, グラフタイトル、ファイル名
+
+    # データベースの確認（使用にはパスワードが必要）
+    @staticmethod
+    def check_the_db(n):  # 引数n:操作メニュー >>> 1:ユーザー情報、 2:遊技履歴
+        DB.check_db(n)
+        print('データは以上です。')
 
 
 # ============================================================================================
@@ -640,7 +679,6 @@ class Pachinko(Store):
                                             continue
                                         else:
                                             print(f'チャンスタイム{Pachinko.count_b}回転目で大当りを引きました。おめでとうございます。')
-                                            Pachinko.user_action('bonus_start')
                                             Pachinko.count_b = 0
                                             # loopを抜けて確変に行くための変数
                                             chance_time = 7
