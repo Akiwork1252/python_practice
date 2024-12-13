@@ -65,7 +65,6 @@ class InformationDisplay:
     # ユーザー名、日付、遊技台のイニシャルを使用してファイル名を作成
     @staticmethod
     def make_filename(username, month, day, model):
-        initial = ''
         date_in_filename = f'{month}{day}'
         file_name = f'{username}_{date_in_filename}_{model}.png'
         return file_name
@@ -92,7 +91,6 @@ class InformationDisplay:
         ax.set_ylabel('玉数')
         # グラフを保存
         fig.savefig(f'game_data/{filename}')
-        # グラフを５秒表示
         while True:
             action = input('Enterキーを押すとグラフが表示されます。')
             if type(action) is str:
